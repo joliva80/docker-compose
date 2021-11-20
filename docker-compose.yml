@@ -1,0 +1,89 @@
+version: '3.7'
+services:
+  config-server:
+    image: config-server:1.0.6
+    ports:
+      - "8888:8888"
+    restart: always
+    networks:
+      - springboot-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888"]
+      interval: 30s
+      timeout: 10s
+      retries: 4
+  eureka-server:
+    image: eureka-server:1.0.4
+    ports:
+      - "8761:8761"
+    restart: always
+    networks:
+      - springboot-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761"]
+      interval: 30s
+      timeout: 10s
+      retries: 4
+  zipkin-server:
+    image: openzipkin/zipkin-slim:latest
+    ports:
+      - "9411:9411"
+    restart: always
+    networks:
+      - springboot-network
+  users-service:
+    image: users-service:1.0.6
+    restart: always
+    networks:
+      - springboot-network
+    depends_on: 
+      - config-server
+      - eureka-server
+  oauth-service:
+    image: oauth-service:1.0.2
+    ports:
+      - "9100:9100"
+    restart: always
+    networks:
+      - springboot-network
+    depends_on: 
+      - config-server
+      - eureka-server
+      - users-service
+  products-service:
+    image: products-service:1.0.2
+    restart: always
+    networks:
+      - springboot-network
+    depends_on: 
+      - config-server
+      - eureka-server
+      - zipkin-server
+  items-service:
+    image: items-service:1.0.1
+    restart: always
+    networks:
+      - springboot-network
+    depends_on: 
+      - config-server
+      - eureka-server
+      - zipkin-server
+      - products-service
+  gateway-server:
+    image: gateway-server:1.0.1
+    ports:
+      - "8090:8090"
+    restart: always
+    networks:
+      - springboot-network
+    depends_on: 
+      - config-server
+      - eureka-server
+      - zipkin-server
+      - products-service
+      - items-service
+      - users-service
+      - oauth-service
+networks:
+  springboot-network:
+
